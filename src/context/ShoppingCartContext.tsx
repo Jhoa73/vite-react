@@ -1,51 +1,62 @@
-import {createContext, useState, FC, PropsWithChildren, Dispatch} from "react";
-import {Product} from "../api/platziFake/useFetchProducts.tsx";
-
+import {
+	createContext,
+	useState,
+	FC,
+	PropsWithChildren,
+	Dispatch,
+} from "react";
+import { useParams } from "react-router-dom";
+import productApi, { Product } from "../api/products";
+import useFetch from "../hooks/useFetch";
 
 interface ShoppingCart {
-	loading: boolean
-	count: number
-	setCount: Dispatch<number>
-	productPreview: Product | null
-	setProductPreview: Dispatch<Product | null>
-	products: Product[],
-	setProducts:Dispatch<Product[]>
+	loading: boolean;
+	count: number;
+	setCount: Dispatch<number>;
+	productPreview: Product | null;
+	setProductPreview: Dispatch<Product | null>;
+	products: Product[];
 }
 
 const defaultShoppingCart: ShoppingCart = {
 	loading: false,
 	count: 0,
-	setCount: () => {
-	},
+	setCount: () => {},
 	productPreview: null,
-	setProductPreview: () => {
-	},
+	setProductPreview: () => {},
 	products: [],
-	setProducts: () => {
-	},
-}
+};
 
 export const ShoppingCartContext = createContext(defaultShoppingCart);
 
-export const ShoppingCartContextProvider: FC<PropsWithChildren> = ({children}) => {
+export const ShoppingCartContextProvider: FC<PropsWithChildren> = ({
+	children,
+}) => {
+	const { category } = useParams<{ category: string }>();
+	const { data: products = [], isLoading } = useFetch<Product[]>({
+		url: category
+			? productApi.getProductsByCategoryURl(category)
+			: productApi.produtsUrl,
+		swrConfig: {
+			keepPreviousData: true,
+			onError: (e) => window.alert("Error en cargad de productos"),
+		},
+	});
+
 	const [count, setCount] = useState<number>(0);
 	const [productPreview, setProductPreview] = useState<Product | null>(null);
-	const [products, setProducts] = useState<Product[]>([]);
-	const values: ShoppingCart  = {
-		loading: false,
+
+	const values: ShoppingCart = {
+		products,
+		loading: isLoading,
 		count,
 		setCount,
 		productPreview,
-		products,
 		setProductPreview,
-		setProducts
-	}
+	};
 	return (
 		<ShoppingCartContext.Provider value={values}>
 			{children}
 		</ShoppingCartContext.Provider>
 	);
-}
-
-
-
+};
